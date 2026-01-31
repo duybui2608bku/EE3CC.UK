@@ -1,0 +1,485 @@
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
+import { ProductGrid } from "@/components/product-grid";
+import { getProductById, getAllProducts, categoryNameToSlug, getRelatedProducts } from "@/lib/data";
+import { CheckCircle2, ArrowLeft, Package, Award, Star, Zap, Headphones, Volume2, Info, ArrowRight } from "lucide-react";
+
+interface ProductPageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export async function generateStaticParams() {
+  const products = getAllProducts();
+  return products.map((product) => ({
+    id: product.ID.toString(),
+  }));
+}
+
+function formatDescription(description?: string): string {
+  if (!description) return "";
+  return description
+    .replace(/&nbsp;/g, " ")
+    .replace(/\r\n/g, "\n") // 统一换行符
+    .replace(/\r/g, "\n") // 统一换行符
+    .replace(/\n{3,}/g, "\n\n") // 将3个或更多连续换行符替换为2个
+    .replace(/\n/g, "<br />")
+    .replace(/(<br \/>\s*){3,}/gi, "<br /><br />") // 将3个或更多连续的<br />替换为2个
+    .trim();
+}
+
+function parseSpecs(description?: string): Array<{ label: string; value: string }> {
+  if (!description) return [];
+  
+  // Remove HTML tags, translation markers, and clean the text
+  let cleanText = description
+    .replace(/<[^>]*>/g, " ") // Remove HTML tags
+    .replace(/class="[^"]*"/g, " ") // Remove class attributes
+    .replace(/id="[^"]*"/g, " ") // Remove id attributes
+    .replace(/data-[^=]*="[^"]*"/g, " ") // Remove data attributes
+    .replace(/dir="[^"]*"/g, " ") // Remove dir attributes
+    .replace(/lang="[^"]*"/g, " ") // Remove lang attributes
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/tw-[a-z-]+/gi, " ") // Remove translation classes
+    .replace(/Y2IQFc/gi, " ") // Remove Google Translate classes
+    .replace(/\s+/g, " ") // Normalize whitespace
+    .trim();
+  
+  // Filter out translation-related content
+  if (cleanText.toLowerCase().includes("tw-target-text") || 
+      cleanText.toLowerCase().includes("tw-data-text") ||
+      cleanText.toLowerCase().includes("data-placeholder")) {
+    // Extract text from span if it exists
+    const spanMatch = cleanText.match(/<span[^>]*>([^<]+)<\/span>/i);
+    if (spanMatch && spanMatch[1]) {
+      cleanText = spanMatch[1].trim();
+    }
+  }
+  
+  const specs: Array<{ label: string; value: string }> = [];
+  
+  // First, try to parse lines with colons (standard format)
+  const lines = cleanText.split("\n");
+  lines.forEach((line) => {
+    const colonIndex = line.indexOf(":");
+    if (colonIndex > 0) {
+      const label = line.substring(0, colonIndex).trim();
+      const value = line.substring(colonIndex + 1).trim();
+      if (label && value && label.length < 50 && value.length < 200) {
+        // Filter out invalid content
+        if (!label.toLowerCase().includes("tw-") && 
+            !label.toLowerCase().includes("y2iqfc") &&
+            !value.toLowerCase().includes("tw-") &&
+            !value.toLowerCase().includes("y2iqfc") &&
+            !label.toLowerCase().includes("data-placeholder")) {
+          specs.push({ label, value });
+        }
+      }
+    }
+  });
+  
+  // If we didn't find specs with colons, try to parse common patterns from continuous text
+  if (specs.length === 0) {
+    // Common audio equipment spec patterns - improved regex
+    const patterns = [
+      { 
+        regex: /Frequency response[:\s]+([^Sensitivity]+?)(?=\s+Sensitivity|$)/i, 
+        label: "Frequency response",
+        cleanup: (v: string) => v.replace(/\s+/g, " ").trim()
+      },
+      { 
+        regex: /Sensitivity[:\s]+(\d+dB)/i, 
+        label: "Sensitivity",
+        cleanup: (v: string) => v.trim()
+      },
+      { 
+        regex: /Nominal resistance[:\s]+(\d+Ω)/i, 
+        label: "Nominal resistance",
+        cleanup: (v: string) => v.trim()
+      },
+      { 
+        regex: /rated power[:\s]+([^Woofer]+?)(?=\s+Woofer|$)/i, 
+        label: "Rated power",
+        cleanup: (v: string) => v.replace(/\s+/g, " ").trim()
+      },
+      { 
+        regex: /peak[:\s]+([^Woofer]+?)(?=\s+Woofer|$)/i, 
+        label: "Peak power",
+        cleanup: (v: string) => v.replace(/\s+/g, " ").trim()
+      },
+      { 
+        regex: /Woofer[:\s]+([^Tweeter]+?)(?=\s+Tweeter|$)/i, 
+        label: "Woofer",
+        cleanup: (v: string) => v.replace(/\s+/g, " ").trim()
+      },
+      { 
+        regex: /Tweeter[:\s]+([^Diffusion]+?)(?=\s+Diffusion|$)/i, 
+        label: "Tweeter",
+        cleanup: (v: string) => v.replace(/\s+/g, " ").trim()
+      },
+      { 
+        regex: /Diffusion angle[:\s]+([^Maximum]+?)(?=\s+Maximum|$)/i, 
+        label: "Diffusion angle",
+        cleanup: (v: string) => v.replace(/\s+/g, " ").trim()
+      },
+      { 
+        regex: /Maximum sound pressure level[:\s]+([^Connect]+?)(?=\s+Connect|$)/i, 
+        label: "Maximum sound pressure level",
+        cleanup: (v: string) => v.replace(/\s+/g, " ").trim()
+      },
+      { 
+        regex: /Connect the socket[:\s]+([^net]+?)(?=\s+net|$)/i, 
+        label: "Connection socket",
+        cleanup: (v: string) => v.replace(/\s+/g, " ").trim()
+      },
+      { 
+        regex: /net weight[:\s]+([^size]+?)(?=\s+size|$)/i, 
+        label: "Net weight",
+        cleanup: (v: string) => v.replace(/\s+/g, " ").trim()
+      },
+      { 
+        regex: /size[:\s]+(.+?)(?=\s+[A-Z]|$)/i, 
+        label: "Size",
+        cleanup: (v: string) => v.replace(/\s+/g, " ").trim()
+      },
+    ];
+    
+    patterns.forEach(({ regex, label, cleanup }) => {
+      const match = cleanText.match(regex);
+      if (match && match[1]) {
+        let value = match[1].trim();
+        value = cleanup ? cleanup(value) : value;
+        if (value && value.length < 200 && !value.toLowerCase().includes("tw-")) {
+          specs.push({ label, value });
+        }
+      }
+    });
+  }
+  
+  // Remove duplicates and limit
+  const uniqueSpecs = specs.filter((spec, index, self) =>
+    index === self.findIndex((s) => s.label === spec.label)
+  );
+  
+  return uniqueSpecs.slice(0, 12); // Limit to 12 specs
+}
+
+export default async function ProductPage({ params }: ProductPageProps) {
+  const { id } = await params;
+  const product = getProductById(parseInt(id));
+
+  if (!product) {
+    notFound();
+  }
+
+  const hasSalePrice =
+    product["Sale price"] && product["Sale price"] < product["Regular price"];
+  const price = product["Sale price"] || product["Regular price"];
+  const inStock = product["In stock?"] === 1;
+  const formattedDescription = formatDescription(product.Description);
+  const specs = parseSpecs(product.Description);
+  const relatedProducts = getRelatedProducts(product.ID, 4);
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Navbar />
+      
+      <main className="flex-1">
+        {/* Hero Section with Background */}
+        <section className="relative overflow-hidden border-b">
+          <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/90 to-background z-10" />
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-5"
+              style={{
+                backgroundImage: product.Images ? `url("${product.Images}")` : undefined
+              }}
+            />
+          </div>
+          
+          <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Back Button */}
+            <Link
+              href="/"
+              className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground cursor-pointer group"
+            >
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+              Back to Home
+            </Link>
+
+            <div className="grid gap-12 lg:grid-cols-2">
+              {/* Image Section */}
+              <div className="space-y-4">
+                <div className="relative aspect-square w-full overflow-hidden rounded-2xl border-2 border-primary/20 bg-card shadow-2xl">
+                  {product.Images ? (
+                    <Image
+                      src={product.Images}
+                      alt={product.Name || "Product image"}
+                      fill
+                      className="object-cover transition-transform duration-500 hover:scale-105"
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      priority
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground">
+                      <Package className="h-24 w-24" />
+                    </div>
+                  )}
+                  
+                  {/* Sale Badge */}
+                  {hasSalePrice && (
+                    <div className="absolute top-4 left-4 rounded-full bg-red-500 px-4 py-2 text-sm font-bold text-white shadow-lg">
+                      Sale
+                    </div>
+                  )}
+                  
+                  {/* Stock Badge */}
+                  {inStock && (
+                    <div className="absolute top-4 right-4 flex items-center gap-1 rounded-full bg-green-500/90 px-3 py-2 text-xs font-medium text-white backdrop-blur-sm shadow-lg">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>In Stock</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Product Info Section */}
+              <div className="space-y-6 lg:pt-8">
+                {/* Category */}
+                {product.Categories && (
+                  <div>
+                    <Link
+                      href={`/category/${categoryNameToSlug(product.Categories.split(",")[0].trim())}`}
+                      className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                    >
+                      <span>{product.Categories.split(",")[0].trim()}</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  </div>
+                )}
+
+                {/* Title */}
+                <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+                  {product.Name}
+                </h1>
+
+                {/* Price */}
+                <div className="flex flex-wrap items-baseline gap-4">
+                  <div className="flex items-baseline gap-3">
+                    {hasSalePrice && (
+                      <span className="text-2xl font-medium text-muted-foreground line-through">
+                        ${product["Regular price"]}
+                      </span>
+                    )}
+                    <span className="text-5xl font-bold text-primary">
+                      ${price}
+                    </span>
+                  </div>
+                  {hasSalePrice && (
+                    <span className="rounded-full bg-primary/20 px-3 py-1 text-sm font-semibold text-primary border border-primary/30">
+                      Save ${(product["Regular price"] - (product["Sale price"] || 0)).toFixed(0)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Stock Status */}
+                <div className="flex items-center gap-3 rounded-lg border bg-card/50 p-4">
+                  {inStock ? (
+                    <>
+                      <CheckCircle2 className="h-6 w-6 text-green-500" />
+                      <div>
+                        <div className="text-sm font-semibold text-card-foreground">In Stock</div>
+                        <div className="text-xs text-muted-foreground">Ready to ship</div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Package className="h-6 w-6 text-muted-foreground" />
+                      <div>
+                        <div className="text-sm font-semibold text-card-foreground">Out of Stock</div>
+                        <div className="text-xs text-muted-foreground">Please contact us to order</div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Key Features */}
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { icon: <Award className="h-5 w-5" />, label: "High Quality" },
+                    { icon: <Headphones className="h-5 w-5" />, label: "Professional Audio" },
+                    { icon: <Zap className="h-5 w-5" />, label: "Superior Performance" },
+                    { icon: <Volume2 className="h-5 w-5" />, label: "Durable" }
+                  ].map((feature, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 rounded-lg border bg-card/50 p-3"
+                    >
+                      <div className="text-primary">{feature.icon}</div>
+                      <span className="text-sm text-card-foreground">{feature.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Description */}
+                {product.Description && (
+                  <div className="space-y-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-3">
+                      <Info className="h-5 w-5 text-primary" />
+                      <h2 className="text-xl font-bold text-foreground">
+                        Product Description
+                      </h2>
+                    </div>
+                    <div
+                      className="prose prose-sm max-w-none text-muted-foreground dark:prose-invert prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground"
+                      dangerouslySetInnerHTML={{ __html: formattedDescription }}
+                    />
+                  </div>
+                )}
+
+                {/* Specifications */}
+                {specs.length > 0 && (
+                  <div className="space-y-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-3">
+                      <Zap className="h-5 w-5 text-primary" />
+                      <h2 className="text-xl font-bold text-foreground">
+                        Specifications
+                      </h2>
+                    </div>
+                    <div className="space-y-3 rounded-lg border bg-card/50 p-4">
+                      <dl className="grid grid-cols-1 gap-3">
+                        {specs.map((spec, index) => (
+                          <div
+                            key={index}
+                            className="flex flex-col gap-1 border-b border-border/50 pb-2 last:border-0"
+                          >
+                            <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                              {spec.label}
+                            </dt>
+                            <dd className="text-sm font-medium text-card-foreground">
+                              {spec.value}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  </div>
+                )}
+
+                {/* Product Details */}
+                <div className="space-y-4 pt-4 border-t border-border">
+                  <div className="flex items-center gap-3">
+                    <Package className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-bold text-foreground">
+                      Product Details
+                    </h2>
+                  </div>
+                  <div className="space-y-3 rounded-lg border bg-card/50 p-4">
+                    <dl className="grid grid-cols-1 gap-3">
+                      <div className="flex flex-col gap-1 border-b border-border/50 pb-2">
+                        <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Product Code
+                        </dt>
+                        <dd className="text-sm font-medium text-card-foreground">
+                          {product.SKU || `E3-${product.ID}`}
+                        </dd>
+                      </div>
+                      <div className="flex flex-col gap-1 border-b border-border/50 pb-2">
+                        <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Category
+                        </dt>
+                        <dd className="text-sm font-medium text-card-foreground">
+                          {product.Categories}
+                        </dd>
+                      </div>
+                      <div className="flex flex-col gap-1 border-b border-border/50 pb-2">
+                        <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Status
+                        </dt>
+                        <dd className="text-sm font-medium text-card-foreground">
+                          {inStock ? (
+                            <span className="inline-flex items-center gap-2 text-green-500">
+                              <CheckCircle2 className="h-4 w-4" />
+                              In Stock
+                            </span>
+                          ) : (
+                            "Out of Stock"
+                          )}
+                        </dd>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Reviews
+                        </dt>
+                        <dd className="text-sm font-medium text-card-foreground">
+                          {product["Allow customer reviews?"] === 1 ? (
+                            <span className="inline-flex items-center gap-2">
+                              <Star className="h-4 w-4 fill-primary text-primary" />
+                              Reviews Allowed
+                            </span>
+                          ) : (
+                            "Reviews Not Allowed"
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Related Products */}
+        {relatedProducts.length > 0 && (
+          <section className="bg-muted/30 py-16 sm:py-24">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="mb-12 flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                    Related Products
+                  </h2>
+                  <p className="mt-2 text-lg text-muted-foreground">
+                    Discover more similar products
+                  </p>
+                </div>
+                {product.Categories && (
+                  <Link
+                    href={`/category/${categoryNameToSlug(product.Categories.split(",")[0].trim())}`}
+                    className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-primary bg-background px-6 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground cursor-pointer"
+                  >
+                    View All
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
+              </div>
+              
+              <ProductGrid products={relatedProducts} />
+              
+              {product.Categories && (
+                <div className="mt-8 text-center sm:hidden">
+                  <Link
+                    href={`/category/${categoryNameToSlug(product.Categories.split(",")[0].trim())}`}
+                    className="inline-flex items-center gap-2 rounded-lg border border-primary bg-background px-6 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground cursor-pointer"
+                  >
+                    View All Products
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
