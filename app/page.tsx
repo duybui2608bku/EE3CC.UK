@@ -10,7 +10,6 @@ export default function Home() {
   const featuredProducts = getFeaturedProducts();
   const categories = getAllCategories().slice(0, 6);
   const allProducts = getAllProducts();
-  // Gallery products - already filtered by getAllProducts to have images
   const galleryProducts = allProducts.slice(0, 8);
 
   return (
@@ -18,9 +17,7 @@ export default function Home() {
       <Navbar />
       
       <main className="flex-1">
-        {/* Hero Section with Background Image */}
         <section className="relative overflow-hidden py-20 sm:py-32">
-          {/* Background Image with Overlay */}
           <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/90 to-background z-10" />
             <div 
@@ -63,7 +60,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Features Section with Icons */}
         <section className="py-16 sm:py-24 bg-muted/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center mb-12">
@@ -117,7 +113,69 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Product Gallery Section */}
+        <section className="relative py-20 sm:py-32 overflow-hidden">
+          {/* Background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/50 to-background" />
+          
+          {/* Decorative elements */}
+          <div className="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+          
+          <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-3xl text-center mb-16">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm text-primary backdrop-blur-sm">
+                <span>Watch & Learn</span>
+              </div>
+              <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl mb-4">
+                Product Demonstration
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Experience the superior quality and professional performance of our audio equipment
+              </p>
+            </div>
+            
+            <div className="mx-auto max-w-5xl">
+              <div className="group relative">
+                {/* Outer glow effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-500" />
+                
+                {/* Video container */}
+                <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-card to-card/50 shadow-2xl backdrop-blur-sm">
+                  {/* Decorative corner accents */}
+                  <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-primary/30 rounded-tl-2xl" />
+                  <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-primary/30 rounded-tr-2xl" />
+                  <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-primary/30 rounded-bl-2xl" />
+                  <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-primary/30 rounded-br-2xl" />
+                  
+                  {/* Video element */}
+                  <video
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                  >
+                    <source
+                     src="http://e3eec.uk/wp-content/uploads/2018/07/E3-Microphone.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                  
+                  {/* Overlay gradient for better video controls visibility */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                </div>
+              </div>
+              
+              {/* Additional info below video */}
+              <div className="mt-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Professional audio equipment designed for superior performance
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="py-16 sm:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center mb-12">
@@ -130,7 +188,7 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {galleryProducts.map((product, index) => (
+              {galleryProducts.map((product) => (
                 <Link
                   key={product.ID}
                   href={`/product/${product.ID}`}
@@ -155,7 +213,7 @@ export default function Home() {
                       {product.Name}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      ${product["Sale price"] || product["Regular price"]}
+                      €{product["Sale price"] || product["Regular price"]}
                     </p>
                   </div>
                 </Link>
@@ -164,7 +222,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Categories Section */}
         <section id="categories" className="py-16 sm:py-24 bg-muted/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center mb-12">
@@ -217,9 +274,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Stats Section with Background */}
         <section className="relative py-16 sm:py-24 overflow-hidden">
-          {/* Background Image */}
           <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/90 to-background z-10" />
             <div 
@@ -266,7 +321,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Featured Products Section */}
         <section className="bg-muted/30 py-16 sm:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center mb-12">
@@ -302,7 +356,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Testimonials Section */}
         <section className="py-16 sm:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center mb-12">

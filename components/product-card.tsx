@@ -66,11 +66,11 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="mt-auto flex items-baseline gap-2">
           {hasSalePrice && (
             <span className="text-sm font-medium text-muted-foreground line-through">
-              ${product["Regular price"]}
+              €{product["Regular price"]}
             </span>
           )}
           <span className="text-lg font-bold text-foreground">
-            ${price}
+            €{price}
           </span>
         </div>
       </div>

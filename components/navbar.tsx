@@ -2,17 +2,16 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Menu, X, Search } from "lucide-react";
 import { getAllCategories } from "@/lib/data";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
-  const categories = getAllCategories();
+  const categories = useMemo(() => getAllCategories(), []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,12 +96,10 @@ export function Navbar() {
                 />
               </div>
             </form>
-            <ThemeToggle />
           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-2">
-            <ThemeToggle />
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 text-foreground transition-colors hover:text-primary cursor-pointer"

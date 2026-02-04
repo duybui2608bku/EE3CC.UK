@@ -1,7 +1,7 @@
 import { Product, Category } from "./types";
 import data from "@/app/data/data.json";
 
-// 获取所有产品
+
 export function getAllProducts(): Product[] {
   return (data as Product[]).filter(
     (product) =>
@@ -10,17 +10,15 @@ export function getAllProducts(): Product[] {
       product["Visibility in catalog"] === "visible" &&
       product.Name &&
       product.Images &&
-      product.Categories // 确保有分类字段
+      product.Categories
   );
 }
 
-// 获取特色产品
 export function getFeaturedProducts(): Product[] {
   const featured = getAllProducts()
     .filter((product) => product["Is featured?"] === 1)
     .slice(0, 8);
-  
-  // 如果没有特色产品，返回最新的8个产品
+
   if (featured.length === 0) {
     return getAllProducts().slice(0, 8);
   }
@@ -28,13 +26,12 @@ export function getFeaturedProducts(): Product[] {
   return featured;
 }
 
-// 获取所有分类
 export function getAllCategories(): Category[] {
   const products = getAllProducts();
   const categoryMap = new Map<string, number>();
 
   products.forEach((product) => {
-    if (!product.Categories) return; // 跳过没有分类的产品
+    if (!product.Categories) return;
     const categories = product.Categories.split(",").map((c) => c.trim());
     categories.forEach((category) => {
       if (category && category !== "Uncategorized" && category !== "More") {
@@ -53,15 +50,13 @@ export function getAllCategories(): Category[] {
     .sort((a, b) => b.count - a.count);
 }
 
-// 根据分类获取产品
 export function getProductsByCategory(categorySlug: string): Product[] {
   const products = getAllProducts();
   
-  // 将 slug 转换为可能的分类名称格式
   const normalizedSlug = categorySlug.toLowerCase().replace(/-/g, " ");
   
   return products.filter((product) => {
-    if (!product.Categories) return false; // 跳过没有分类的产品
+    if (!product.Categories) return false;
     const categories = product.Categories.split(",").map((c) => c.trim());
     return categories.some((cat) => {
       const normalizedCat = cat.toLowerCase().replace(/\s+/g, " ");
@@ -76,12 +71,10 @@ export function getProductsByCategory(categorySlug: string): Product[] {
   });
 }
 
-// 根据ID获取产品
 export function getProductById(id: number): Product | undefined {
   return getAllProducts().find((product) => product.ID === id);
 }
 
-// 搜索产品（仅搜索产品名称）
 export function searchProducts(query: string): Product[] {
   const products = getAllProducts();
   const lowerQuery = query.toLowerCase();
@@ -91,13 +84,11 @@ export function searchProducts(query: string): Product[] {
   );
 }
 
-// 将分类名称转换为 slug
 export function categoryNameToSlug(categoryName: string | undefined): string {
   if (!categoryName) return "";
   return categoryName.toLowerCase().replace(/\s+/g, "-");
 }
 
-// 获取相关产品（同分类的其他产品）
 export function getRelatedProducts(productId: number, limit: number = 4): Product[] {
   const currentProduct = getProductById(productId);
   if (!currentProduct || !currentProduct.Categories) return [];
