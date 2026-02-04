@@ -63,9 +63,7 @@ export function getProductsByCategory(categorySlug: string): Product[] {
       const catSlug = cat.toLowerCase().replace(/\s+/g, "-");
       return (
         catSlug === categorySlug ||
-        normalizedCat === normalizedSlug ||
-        normalizedCat.includes(normalizedSlug) ||
-        normalizedSlug.includes(normalizedCat)
+        normalizedCat === normalizedSlug
       );
     });
   });
