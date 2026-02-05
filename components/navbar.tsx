@@ -28,7 +28,7 @@ export function Navbar() {
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center transition-opacity hover:opacity-80"
+            className="flex items-center transition-opacity hover:opacity-80 "
           >
             <Image
               src="http://e3eec.uk/wp-content/uploads/2018/08/E3-LOGO-TEXT-1.png"
