@@ -11,14 +11,14 @@ export function Footer() {
           <div className="space-y-4">
             <Link
               href="/"
-              className="flex items-center transition-opacity hover:opacity-80"
+              className="flex items-center transition-opacity hover:opacity-80 bg-black/50 p-2 rounded-md"
             >
               <Image
                 src="http://e3eec.uk/wp-content/uploads/2018/08/E3-LOGO-TEXT-1.png"
                 alt="E3 Audio Logo"
-                width={160}
-                height={40}
-                className="h-8 w-auto"
+                width={200}
+                height={80}
+                className="h-16 w-auto"
                 unoptimized
               />
             </Link>
@@ -128,7 +128,7 @@ export function Footer() {
         </div>
 
         <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>&copy; Copyright 2026 - E3 AUDIO & ELECTRONICS EQUIPMENT CO., LTD.,</p>
+          <p>&copy; Copyright 2001 - E3 AUDIO & ELECTRONICS EQUIPMENT CO., LTD.,</p>
         </div>
       </div>
     </footer>
